@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOF-EXPRESS — Facturación</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0c10;color:#dde3ef;min-height:100vh}
+:root{--ac:#f5c842;--bg:#0a0c10;--pan:#111520;--card:#171e2b;--bor:#1f2a3d;--mut:#4e5a70;--ok:#22c55e;--err:#ef4444;--inf:#3b82f6;--cup:#f97316;--pur:#a855f7;--teal:#14b8a6}
+#sidebar{width:200px;background:#0d1017;border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+#sidebar.closed{width:0;overflow:hidden}
+.sb-logo{padding:18px 14px 12px}
+.sb-logo .n{color:var(--ac);font-weight:900;font-size:14px;letter-spacing:1px}
+.sb-logo .s{color:var(--mut);font-size:10px;margin-top:2px}
+.sb-logo .mod-badge{background:#f5c84222;border:1px solid #f5c84244;border-radius:5px;padding:2px 8px;font-size:9px;color:var(--ac);font-weight:700;margin-top:6px;display:inline-block}
+nav{flex:1;padding:4px 8px;overflow-y:auto}
+.nb{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border-radius:8px;border:none;background:transparent;color:var(--mut);cursor:pointer;font-size:13px;font-weight:500;margin-bottom:2px;text-align:left;font-family:inherit}
+.nb:hover{background:rgba(245,200,66,.08);color:#dde3ef}
+.nb.active{background:var(--ac);color:#0a0c10;font-weight:800}
+.nb .ic{font-size:15px;flex-shrink:0}
+.sb-bottom{padding:10px 14px;border-top:1px solid var(--bor);font-size:10px;color:var(--mut)}
+.sb-link{display:block;background:#3b82f611;border:1px solid #3b82f633;border-radius:6px;padding:7px 10px;color:#3b82f6;font-size:11px;font-weight:700;text-decoration:none;margin-bottom:6px;text-align:center}
+.sb-link:hover{background:#3b82f622}
+#main{margin-left:200px;display:flex;flex-direction:column;min-height:100vh;transition:margin .2s}
+#main.full{margin-left:0}
+#topbar{background:#111520;border-bottom:1px solid var(--bor);padding:10px 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:40}
+#topbar h1{font-size:15px;font-weight:700;margin:0}
+#tstats{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.tstat{background:var(--card);border:1px solid var(--bor);border-radius:6px;padding:4px 10px;font-size:11px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+.sync-dot.off{background:var(--err);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#content{flex:1;padding:20px;overflow-y:auto}
+.phdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.phdr h2{color:var(--ac);margin:0;font-size:18px}
+.phdr p{color:var(--mut);font-size:11px;margin:3px 0 0}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sbox{background:var(--card);border:1px solid var(--bor);border-radius:10px;padding:14px 16px;flex:1;min-width:110px}
+.sbox .sl{color:var(--mut);font-size:10px;margin-bottom:3px}
+.sbox .sv{font-size:20px;font-weight:800;line-height:1.1}
+.card{background:var(--card);border:1px solid var(--bor);border-radius:12px;padding:18px;margin-bottom:14px}
+.ctitle{font-weight:700;margin-bottom:12px;font-size:13px}
+button{cursor:pointer;border:none;border-radius:7px;font-family:inherit;font-weight:700;transition:opacity .15s}
+button:hover{opacity:.85}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btn{padding:9px 18px;font-size:13px}
+.bp{background:var(--ac);color:#0a0c10}
+.bd{background:var(--err);color:#fff}
+.bs{background:var(--ok);color:#0a0c10}
+.bsec{background:var(--bor);color:#dde3ef}
+.binf{background:var(--inf);color:#fff}
+.sm{padding:5px 10px;font-size:11px}
+.full{width:100%}
+.field{margin-bottom:12px}
+.field label{display:block;color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box;font-family:inherit;-webkit-appearance:none}
+.field input:disabled{background:var(--pan);color:var(--mut)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px}
+.ovx{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 9px;color:var(--mut);border-bottom:1px solid var(--bor);font-size:10px;font-weight:700;white-space:nowrap}
+td{padding:7px 9px;border-bottom:1px solid var(--bor);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+.empty{text-align:center;padding:24px;color:var(--mut);font-size:12px}
+.tag{border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;white-space:nowrap}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
+.mbox{background:var(--card);border:1px solid var(--bor);border-radius:14px;padding:24px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto}
+.mbox.wide{max-width:820px}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.mhdr h3{color:var(--ac);margin:0;font-size:15px;font-weight:800}
+.mc{background:none;border:none;color:var(--mut);cursor:pointer;font-size:20px;padding:0;line-height:1}
+.divl{display:flex;align-items:center;gap:8px;margin:12px 0 10px}
+.divl hr{flex:1;border:none;border-top:1px solid var(--bor)}
+.divl span{color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;white-space:nowrap}
+.search-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-bar input{flex:1;min-width:180px;background:#0a0c10;border:1px solid var(--bor);border-radius:7px;padding:8px 12px;color:#dde3ef;font-size:13px;outline:none}
+.frow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bor);flex-wrap:wrap;gap:7px}
+.info-box{background:#3b82f611;border:1px solid #3b82f633;border-radius:8px;padding:9px 13px;font-size:12px;color:#3b82f6;margin-bottom:12px}
+.warn-box{background:#f5c84211;border:1px solid #f5c84233;border-radius:8px;padding:9px 13px;font-size:12px;color:var(--ac);margin-bottom:12px}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ok);color:#0a0c10;padding:11px 18px;border-radius:9px;font-weight:700;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999}
+.toast.show{transform:translateY(0);opacity:1}
+.badge-pend{background:#f5c84222;color:var(--ac);border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-left:5px}
+@media print{#sidebar,#topbar,.no-print{display:none!important}#main{margin-left:0!important}#content{padding:0!important}.mbg{position:static!important;background:none!important;padding:0!important}.mbox{border:none!important;padding:0!important;max-height:none!important;max-width:none!important}.mhdr,.no-print{display:none!important}}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <div class="sb-logo">
+    <div class="n">🏪 KOF-EXPRESS</div>
+    <div class="s" id="sb-empresa">Cargando...</div>
+    <div class="mod-badge">📋 FACTURACIÓN</div>
+  </div>
+  <nav id="nav">
+    <button class="nb active" onclick="irA('facturas')"><span class="ic">🧾</span>Facturas</button>
+    <button class="nb" onclick="irA('pedidos')"><span class="ic">📥</span>Pedidos<span class="badge-pend" id="badge-ped">0</span></button>
+    <button class="nb" onclick="irA('gestores')"><span class="ic">👥</span>Gestores</button>
+    <button class="nb" onclick="irA('mensajeros')"><span class="ic">🛵</span>Mensajeros</button>
+    <button class="nb" onclick="irA('config')"><span class="ic">⚙️</span>Configurar</button>
+  </nav>
+  <div class="sb-bottom">
+    <a class="sb-link" href="B_Finanzas.html" target="_blank">📊 Ir a Finanzas</a>
+    <a class="sb-link" href="C_TiendaWeb.html" target="_blank">🌐 Ir a Tienda</a>
+    <div id="sb-sync"><span class="sync-dot" id="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
+  </div>
+</div>
+<div id="main">
+  <div id="topbar">
+    <button onclick="toggleSide()" style="background:none;border:none;color:var(--mut);font-size:18px;padding:0;cursor:pointer">☰</button>
+    <h1 id="ptitle">Facturas</h1>
+    <div id="tstats"></div>
+  </div>
+  <div id="content"><div class="empty">Conectando con Firebase...</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, push, set, update, remove, get }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── FIREBASE ──────────────────────────────────────────────────────────────────
+const FB={apiKey:"AIzaSyAm0re-tCh5EPaynCHh3AzgiMw_1swREJM",authDomain:"kof-express.firebaseapp.com",databaseURL:"https://kof-express-default-rtdb.firebaseio.com",projectId:"kof-express",storageBucket:"kof-express.firebasestorage.app",messagingSenderId:"846750149946",appId:"1:846750149946:web:c330681d5fee8621c43403"};
+const app=initializeApp(FB);
+const db=getDatabase(app);
+
+// ── ESTADO ────────────────────────────────────────────────────────────────────
+let D={empresa:{nombre:'KOF-EXPRESS',ruc:'00042567543',direccion:'SMP_LA HABANA_Tienda ONLINE',tel:'',email:''},tasa:{cup:245,transferPorc:10,zellePorc:2},facturas:{},pedidos:{},gestores:{},mensajeros:{},productos:{}};
+let MOD='facturas';
+let itemsFac=[];
+let prodIdx=1,pagoIdx=1;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const uid=()=>Date.now()+Math.floor(Math.random()*9999);
+const hoy=()=>new Date().toISOString().split('T')[0];
+const usd=n=>'$'+Number(n||0).toFixed(2);
+const num=n=>Number(n||0).toFixed(2);
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const pad=n=>String(n).padStart(3,'0');
+const tag=(t,c)=>`<span class="tag" style="background:${c}22;color:${c}">${t}</span>`;
+function toast(msg,col='#22c55e'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=col;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function gv(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function btn(l,cls,oc,sm=false){return `<button class="btn ${cls}${sm?' sm':''}" onclick="${oc}">${l}</button>`;}
+function campo(lbl,inp,mb=12){return `<div class="field" style="margin-bottom:${mb}px"><label>${lbl}</label>${inp}</div>`;}
+function inp(name,val,tipo='text',ph='',dis=false,step=''){return `<input name="${name}" type="${tipo}" value="${esc(val)}" placeholder="${ph}" ${dis?'disabled':''} ${step?'step="'+step+'"':''} autocomplete="off">`;}
+function sel(name,val,opts){return `<select name="${name}">${opts.map(o=>`<option value="${o.v??o}"${(o.v??o)==val?' selected':''}>${o.l??o}</option>`).join('')}</select>`;}
+function abrirModal(h){document.body.insertAdjacentHTML('beforeend',h);}
+function cerrarModal(id){const m=document.getElementById(id);if(m)m.remove();}
+function tabla(cols,rows,acc){
+  if(!rows.length)return '<div class="empty">Sin registros</div>';
+  return `<div class="ovx"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}${acc?'<th>Acc.</th>':''}</tr></thead><tbody>${rows.map((r,i)=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}${acc?`<td><div style="display:flex;gap:4px">${acc(i)}</div></td>`:''}</tr>`).join('')}</tbody></table></div>`;
+}
+function sbox(lbl,val,col,ic=''){return `<div class="sbox"><div class="sl">${ic} ${lbl}</div><div class="sv" style="color:${col}">${val}</div></div>`;}
+
+// ── FIREBASE LISTENERS ────────────────────────────────────────────────────────
+let sideOpen=true;
+function toggleSide(){sideOpen=!sideOpen;document.getElementById('sidebar').classList.toggle('closed',!sideOpen);document.getElementById('main').classList.toggle('full',!sideOpen);}
+
+// Sync status
+onValue(ref(db,'.info/connected'),snap=>{
+  const on=snap.val();
+  document.getElementById('sync-dot').className='sync-dot'+(on?'':' off');
+  document.getElementById('sync-txt').textContent=on?'Sincronizado':'Sin conexión';
+});
+
+// Load empresa config
+onValue(ref(db,'config/empresa'),snap=>{
+  if(snap.exists()){D.empresa=snap.val();document.getElementById('sb-empresa').textContent=D.empresa.nombre;}
+});
+onValue(ref(db,'config/tasa'),snap=>{if(snap.exists())D.tasa=snap.val();});
+
+// Load facturas
+onValue(ref(db,'facturas'),snap=>{
+  D.facturas=snap.exists()?snap.val():{};
+  if(MOD==='facturas')mostrar();
+  actualizarStats();
+});
+
+// Load pedidos (vales from gestores)
+onValue(ref(db,'vales'),snap=>{
+  D.pedidos=snap.exists()?snap.val():{};
+  const pend=Object.values(D.pedidos).filter(p=>p.estado==='pendiente').length;
+  document.getElementById('badge-ped').textContent=pend;
+  if(MOD==='pedidos')mostrar();
+});
+
+// Load gestores
+onValue(ref(db,'gestores'),snap=>{D.gestores=snap.exists()?snap.val():{};if(MOD==='gestores')mostrar();});
+
+// Load mensajeros
+onValue(ref(db,'mensajeros'),snap=>{D.mensajeros=snap.exists()?snap.val():{};if(MOD==='mensajeros')mostrar();});
+
+// Load productos
+onValue(ref(db,'productos'),snap=>{D.productos=snap.exists()?snap.val():{};actualizarStats();});
+
+// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+const MODS=[{id:'facturas',l:'Facturas'},{id:'pedidos',l:'Pedidos'},{id:'gestores',l:'Gestores'},{id:'mensajeros',l:'Mensajeros'},{id:'config',l:'Configurar'}];
+window.irA=function(id){
+  MOD=id;
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('active',b.textContent.trim().startsWith(MODS.find(m=>m.id===id)?.l?.charAt(0))));
+  document.querySelectorAll('.nb').forEach(b=>{if(b.getAttribute('onclick')?.includes(`'${id}'`))b.classList.add('active');else b.classList.remove('active');});
+  document.getElementById('ptitle').textContent=MODS.find(m=>m.id===id)?.l||id;
+  mostrar();
+};
+
+function actualizarStats(){
+  const facs=Object.values(D.facturas);
+  const prods=Object.values(D.productos);
+  const gan=facs.reduce((s,f)=>s+(f.totalUSD||0),0);
+  const stock=prods.reduce((s,p)=>s+(p.almacen||0)+(p.tienda||0),0);
+  document.getElementById('tstats').innerHTML=
+    `<div class="tstat">🧾 <span style="color:var(--ac)">${facs.length}</span> fac.</div>`+
+    `<div class="tstat">📦 <span style="color:var(--inf)">${stock}</span> uds</div>`+
+    `<div class="tstat" style="border-color:var(--ok)">💵 <span style="color:var(--ok);font-weight:700">${usd(gan)}</span></div>`;
+}
+
+function mostrar(){
+  const c=document.getElementById('content');
+  if(MOD==='facturas')c.innerHTML=pFacturas();
+  else if(MOD==='pedidos')c.innerHTML=pPedidos();
+  else if(MOD==='gestores')c.innerHTML=pGestores();
+  else if(MOD==='mensajeros')c.innerHTML=pMensajeros();
+  else if(MOD==='config')c.innerHTML=pConfig();
+}
+
+// ════════════════════════════════════════════════════════════════
+// FACTURAS
+// ════════════════════════════════════════════════════════════════
+function pFacturas(){
+  const facs=Object.entries(D.facturas).map(([k,v])=>({...v,_key:k})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+  const tv=facs.reduce((s,f)=>s+(f.totalUSD||0),0);
+  const tc=facs.reduce((s,f)=>s+(f.totalCUP||0),0);
+  const tcom=facs.reduce((s,f)=>s+(f.comisiones||0),0);
+  const pend=facs.filter(f=>f.estado!=='Pagada').length;
+  let h=`<div class="phdr"><div><h2>Facturas</h2><p>Conectadas en tiempo real con Firebase</p></div>${btn('+ Nueva Factura','bp','abrirNuevaFac()')}</div>`;
+  h+=`<div class="stats">${sbox('Facturado USD',usd(tv),'#22c55e','💵')}${sbox('Total CUP',Math.round(tc).toLocaleString()+' CUP','#f97316','🪙')}${sbox('Comisiones',usd(tcom),'#f97316','💸')}${sbox('Pendientes',pend,'#ef4444','⏳')}</div>`;
+  h+=`<div class="search-bar"><input id="bfac" type="text" placeholder="🔍 Buscar factura..." oninput="filtrarFacs()"></div>`;
+  h+='<div class="card" id="fac-lista">';
+  if(!facs.length) h+='<div class="empty">No hay facturas. ¡Emite la primera!</div>';
+  facs.forEach(f=>{
+    const g=Object.values(D.gestores).find(x=>x.id==f.gestorId||x.codigo==f.gestorId);
+    h+=`<div class="frow">
+      <div>
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:2px">
+          <span style="color:var(--ac);font-weight:800;font-size:14px">${esc(f.numero||'—')}</span>
+          ${tag(f.estado||'Pendiente',f.estado==='Pagada'?'#22c55e':'#f97316')}
+          ${tag((f.moneda||'CUP')+'·'+(f.formaPago||'Efectivo'),'#4e5a70')}
+        </div>
+        <div style="font-size:13px">${esc(f.clienteNombre||'')}</div>
+        <div style="color:var(--mut);font-size:11px">${f.fecha||''} · ${g?esc(g.nombre):'Sin gestor'} · ${f.items?.length||0} productos</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="text-align:right">
+          <div style="color:#22c55e;font-weight:800">${usd(f.totalUSD)}</div>
+          <div style="color:#f97316;font-size:11px">${Math.round(f.totalCUP||0).toLocaleString()} CUP</div>
+        </div>
+        ${btn('👁','bsec',`verFac('${f._key}')`,true)}
+        ${btn(f.estado==='Pagada'?'↩':'✓ Pagar',f.estado==='Pagada'?'bsec':'bs',`toggleFac('${f._key}')`,true)}
+        ${btn('✕','bd',`elimFac('${f._key}')`,true)}
+      </div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+window.filtrarFacs=function(){
+  const q=(document.getElementById('bfac')?.value||'').toLowerCase();
+  document.querySelectorAll('#fac-lista .frow').forEach(row=>{
+    row.style.display=!q||row.textContent.toLowerCase().includes(q)?'':'none';
+  });
+};
+
+function sigNum(){
+  const nums=Object.values(D.facturas).map(f=>parseInt((f.numero||'FAC-000').replace(/\D/g,''))||0);
+  return 'FAC-'+pad(Math.max(0,...nums)+1);
+}
+
+window.abrirNuevaFac=function(){
+  itemsFac=[];prodIdx=1;pagoIdx=1;
+  const num=sigNum();
+  const gsOpts=[{v:'',l:'— Selecciona el gestor —'},...Object.values(D.gestores).map(g=>({v:g.codigo,l:g.codigo+' · '+g.nombre}))];
+  const msOpts=[{v:'',l:'— Ninguno —'},...Object.values(D.mensajeros).map(m=>({v:m.id||m.nombre,l:m.nombre+' · '+m.tel}))];
+  const prodOpts=[{v:'',l:'— Selecciona un producto —'},...Object.values(D.productos).map(p=>({v:p.id||p.codigo,l:p.codigo+' · '+p.nombre+' · '+usd(p.precio)+' (Stock:'+(( p.almacen||0)+(p.tienda||0))+')'+(p.tipo==='combo'?' [COMBO]':'')}))];
+  let h=`<div class="mbg" id="m-fac"><div class="mbox wide"><div class="mhdr"><h3>Nueva Factura ${num}</h3><button class="mc" onclick="cerrarModal('m-fac')">✕</button></div>`;
+  h+=`<div class="g2">${campo('Fecha',inp('fFecha',hoy(),'date'))}${campo('N° Factura',inp('fNum',num,'text','','true'))}</div>`;
+  h+=`<div class="divl"><hr><span>Vendedor y Mensajero</span><hr></div>`;
+  h+=`<div style="background:var(--pan);border-radius:8px;padding:12px;margin-bottom:10px">
+    <div style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;margin-bottom:6px">GESTOR / VENDEDOR <span style="color:var(--err)">* Obligatorio</span></div>
+    <input id="bGest" type="text" placeholder="Buscar gestor..." oninput="filtGestFac()" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;margin-bottom:8px;box-sizing:border-box">
+    <select name="fGestor" id="selGest" style="width:100%;background:#0a0c10;border:2px solid var(--err);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box">
+      ${gsOpts.map(o=>`<option value="${o.v}">${o.l}</option>`).join('')}
+    </select></div>`;
+  h+=`<div style="background:var(--pan);border-radius:8px;padding:12px;margin-bottom:10px">
+    <div style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;margin-bottom:6px">MENSAJERO QUE ENTREGA</div>
+    <input id="bMens" type="text" placeholder="Buscar mensajero..." oninput="filtMensFac()" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;margin-bottom:8px;box-sizing:border-box">
+    <select name="fMensajero" id="selMens" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box">
+      ${msOpts.map(o=>`<option value="${o.v}">${o.l}</option>`).join('')}
+    </select></div>`;
+  h+=`<div class="divl"><hr><span>Datos del Cliente</span><hr></div>`;
+  h+=`<div class="g2">${campo('Nombre del Cliente',inp('fCliente',''))}${campo('Dirección',inp('fDir',''))}</div>`;
+  h+=`<div class="g2">${campo('Moneda',sel('fMoneda','CUP',[{v:'CUP',l:'CUP (Pesos cubanos)'},{v:'USD',l:'USD (Dólares)'}]))}${campo('Forma de Pago',sel('fPago','Efectivo',['Efectivo','Transferencia','Zelle']))}</div>`;
+  h+=`<div id="tasa-inf" class="info-box"></div>`;
+  h+=`<div class="divl"><hr><span>Productos / Combos</span><hr></div>`;
+  h+=`<input id="bProd" type="text" placeholder="Buscar producto..." oninput="filtProdFac()" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;margin-bottom:8px;box-sizing:border-box">`;
+  h+=`<div style="display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
+    <div style="flex:3"><select name="addProd" id="selProd" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:var(--mut);font-size:13px;outline:none;box-sizing:border-box">${prodOpts.map(o=>`<option value="${o.v}">${o.l}</option>`).join('')}</select></div>
+    <div style="flex:1">${campo('Cant.',inp('addCant','','number','1'),0)}</div>
+    <div style="margin-bottom:0">${btn('+ Añadir','bp','addItemFac()',true)}</div></div>`;
+  h+=`<div id="lista-items"><div class="empty">Añade productos a la factura</div></div>`;
+  h+=`<div class="divl"><hr><span>Pago del Cliente (puede ser mixto)</span><hr></div>`;
+  h+=`<div style="background:#22c55e11;border:1px solid #22c55e33;border-radius:8px;padding:13px;margin-bottom:12px">
+    <div style="color:var(--ok);font-size:11px;font-weight:700;margin-bottom:9px">El cliente puede pagar en varias monedas hasta completar el total</div>
+    <div id="pm-rows">
+      <div class="pm-row" id="pm-0" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;margin-bottom:8px">
+        <div>${campo('Forma de Pago',sel('pm0f','USD_Efectivo',[{v:'USD_Efectivo',l:'💵 USD Efectivo'},{v:'CUP_Efectivo',l:'🪙 CUP Efectivo'},{v:'CUP_Transfer',l:'🏦 CUP Transfer'},{v:'Zelle',l:'📲 Zelle'},{v:'MLC',l:'💳 MLC'}]),0)}</div>
+        <div>${campo('Monto',inp('pm0m','','number','0.00'),0)}</div>
+        <div><label style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;display:block;margin-bottom:3px">EQUIV. USD</label><div id="pm0eq" style="background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:var(--ok);font-weight:800;font-size:14px">$0.00</div></div>
+        <div style="margin-bottom:0"><button type="button" class="btn bsec sm" onclick="quitarPM(this)" style="margin-top:19px">✕</button></div>
+      </div>
+    </div>
+    <button type="button" class="btn bsec sm" onclick="addPM()" style="margin-bottom:12px">+ Otra forma de pago</button>
+    <div style="background:#0a0c10;border-radius:7px;padding:10px">
+      <div style="display:flex;justify-content:space-between;color:var(--mut);font-size:13px;margin-bottom:4px"><span>Total a pagar</span><span id="pm-tot" style="color:var(--ac);font-weight:800">$0.00</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--mut);font-size:13px;margin-bottom:4px"><span>Total pagado</span><span id="pm-pag" style="color:var(--ok);font-weight:800">$0.00</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;border-top:1px solid var(--bor);padding-top:7px;margin-top:4px"><span>Diferencia</span><span id="pm-diff" style="color:var(--inf)">$0.00</span></div>
+    </div></div>`;
+  h+=`<div style="background:#f5c84211;border:1px solid #f5c84233;border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="color:var(--ac);font-size:11px;font-weight:700;margin-bottom:8px">💰 Gasto de Traslado / Mensajería (Interno — no aparece en factura del cliente)</div>
+    <div class="g2">${campo('Monto USD',inp('gastoTraslado','','number','0.00'))}${campo('Concepto',inp('gastoTrasladoCon','','text','Envío zona norte...'))}
+    </div></div>`;
+  h+=campo('Notas visibles en la factura',inp('fNotas',''));
+  h+=btn('✅ Emitir Factura','bp full','guardarFac()');
+  h+='</div></div>';
+  abrirModal(h);
+  actualizarTasaInf();
+  setTimeout(()=>{
+    document.querySelector('[name=fMoneda]')?.addEventListener('change',()=>{actualizarTasaInf();actualizarPagoOpts();});
+    document.querySelector('[name=fPago]')?.addEventListener('change',actualizarTasaInf);
+    document.querySelector('[name=pm0f]')?.addEventListener('change',actualizarPM);
+    document.querySelector('[name=pm0m]')?.addEventListener('input',actualizarPM);
+  },100);
+};
+
+window.filtGestFac=function(){
+  const q=(document.getElementById('bGest')?.value||'').toLowerCase();
+  const s=document.getElementById('selGest'); if(!s)return;
+  const v=s.value;
+  s.innerHTML='<option value="">— Selecciona el gestor —</option>';
+  Object.values(D.gestores).filter(g=>!q||g.nombre?.toLowerCase().includes(q)||g.codigo?.toLowerCase().includes(q)).forEach(g=>{const o=document.createElement('option');o.value=g.codigo;o.textContent=g.codigo+' · '+g.nombre;if(g.codigo==v)o.selected=true;s.appendChild(o);});
+};
+window.filtMensFac=function(){
+  const q=(document.getElementById('bMens')?.value||'').toLowerCase();
+  const s=document.getElementById('selMens'); if(!s)return;
+  const v=s.value;
+  s.innerHTML='<option value="">— Ninguno —</option>';
+  Object.values(D.mensajeros).filter(m=>!q||m.nombre?.toLowerCase().includes(q)).forEach(m=>{const o=document.createElement('option');o.value=m.id||m.nombre;o.textContent=m.nombre+' · '+m.tel;if((m.id||m.nombre)==v)o.selected=true;s.appendChild(o);});
+};
+window.filtProdFac=function(){
+  const q=(document.getElementById('bProd')?.value||'').toLowerCase();
+  const s=document.getElementById('selProd'); if(!s)return;
+  const v=s.value;
+  s.innerHTML='<option value="">— Selecciona un producto —</option>';
+  Object.values(D.productos).filter(p=>!q||p.nombre?.toLowerCase().includes(q)||p.codigo?.toLowerCase().includes(q)).forEach(p=>{const o=document.createElement('option');o.value=p.id||p.codigo;o.textContent=(p.tipo==='combo'?'[COMBO] ':'')+p.codigo+' · '+p.nombre+' · '+usd(p.precio)+' (Stock:'+((p.almacen||0)+(p.tienda||0))+')';if((p.id||p.codigo)==v)o.selected=true;s.appendChild(o);});
+};
+
+function getTasa(){
+  const mon=document.querySelector('[name=fMoneda]')?.value;
+  const pago=document.querySelector('[name=fPago]')?.value;
+  if(mon!=='CUP')return{tipo:'usd',rate:1};
+  if(pago==='Zelle')return{tipo:'zelle',rate:D.tasa.zellePorc};
+  if(pago==='Transferencia')return{tipo:'transfer',rate:D.tasa.transferPorc};
+  return{tipo:'cup',rate:D.tasa.cup};
+}
+function actualizarTasaInf(){
+  const el=document.getElementById('tasa-inf'); if(!el)return;
+  const t=getTasa();
+  if(t.tipo==='cup')el.innerHTML=`Tasa activa: <b>1 USD = ${t.rate} CUP</b> (Efectivo en mano)`;
+  else if(t.tipo==='transfer')el.innerHTML=`Transferencia: se cobra <b>+${t.rate}%</b> sobre el valor`;
+  else if(t.tipo==='zelle')el.innerHTML=`Zelle: se cobra <b>+${t.rate}%</b> sobre el total en USD`;
+  else el.innerHTML='Factura en USD directos — sin recargo';
+}
+function actualizarPagoOpts(){
+  const mon=document.querySelector('[name=fMoneda]')?.value;
+  const p=document.querySelector('[name=fPago]'); if(!p)return;
+  p.innerHTML=(mon==='CUP'?['Efectivo','Transferencia','Zelle']:['Efectivo','Zelle']).map(o=>`<option value="${o}">${o}</option>`).join('');
+  actualizarTasaInf();
+}
+
+// PAGO MIXTO
+let pmIdx=1;
+function calcEquivUSD(forma,monto,moneda){
+  monto=+monto||0;
+  if(moneda==='CUP')monto=monto/D.tasa.cup;
+  if(forma==='CUP_Transfer')monto=monto/(1+D.tasa.transferPorc/100);
+  return monto;
+}
+window.addPM=function(){
+  const i=pmIdx++;
+  const cont=document.getElementById('pm-rows'); if(!cont)return;
+  const d=document.createElement('div');d.className='pm-row';d.id='pm-'+i;
+  d.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;margin-bottom:8px';
+  d.innerHTML=`<div><label style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;display:block;margin-bottom:3px">FORMA DE PAGO</label><select name="pm${i}f" onchange="actualizarPM()" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box"><option value="USD_Efectivo">💵 USD Efectivo</option><option value="CUP_Efectivo">🪙 CUP Efectivo</option><option value="CUP_Transfer">🏦 CUP Transfer</option><option value="Zelle">📲 Zelle</option><option value="MLC">💳 MLC</option></select></div>
+  <div><label style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;display:block;margin-bottom:3px">MONTO</label><input name="pm${i}m" type="number" step="0.01" placeholder="0.00" oninput="actualizarPM()" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box"></div>
+  <div><label style="color:var(--mut);font-size:10px;font-weight:700;letter-spacing:.7px;display:block;margin-bottom:3px">EQUIV. USD</label><div id="pm${i}eq" style="background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:var(--ok);font-weight:800;font-size:14px">$0.00</div></div>
+  <div style="margin-bottom:0"><button type="button" class="btn bsec sm" onclick="quitarPM(this)" style="margin-top:19px">✕</button></div>`;
+  cont.appendChild(d);
+  d.querySelector('select')?.addEventListener('change',actualizarPM);
+  d.querySelector('input')?.addEventListener('input',actualizarPM);
+};
+window.quitarPM=function(btn){btn.closest('.pm-row')?.remove();actualizarPM();};
+window.actualizarPM=function(){
+  const subUSD=itemsFac.reduce((s,it)=>s+it.precio*it.cant,0);
+  let totPag=0;
+  document.querySelectorAll('.pm-row').forEach(row=>{
+    const id=row.id.replace('pm-','');
+    const forma=document.querySelector(`[name=pm${id}f]`)?.value||'USD_Efectivo';
+    const monto=document.querySelector(`[name=pm${id}m]`)?.value||0;
+    const eq=calcEquivUSD(forma,monto,'USD');
+    totPag+=eq;
+    const eqEl=document.getElementById('pm'+id+'eq');
+    if(eqEl)eqEl.textContent=usd(eq);
+  });
+  const diff=totPag-subUSD;
+  const ptEl=document.getElementById('pm-tot'); if(ptEl)ptEl.textContent=usd(subUSD);
+  const ppEl=document.getElementById('pm-pag'); if(ppEl)ppEl.textContent=usd(totPag);
+  const pdEl=document.getElementById('pm-diff');
+  if(pdEl){pdEl.textContent=diff>=0?'Vuelto: '+usd(diff):'Falta: '+usd(Math.abs(diff));pdEl.style.color=diff>=0?'var(--ok)':'var(--err)';}
+};
+
+// ITEMS FAC
+window.addItemFac=function(){
+  const pidEl=document.getElementById('selProd');
+  const cantEl=document.querySelector('[name=addCant]');
+  if(!pidEl||!cantEl)return;
+  const pid=pidEl.value;
+  const prod=Object.values(D.productos).find(p=>(p.id||p.codigo)==pid);
+  if(!prod){toast('Selecciona un producto','#f97316');return;}
+  const cant=+cantEl.value||1;
+  itemsFac.push({pid,codigo:prod.codigo,nombre:prod.nombre,unidad:prod.unidad||'Unidad',cant,precio:prod.precio||0,comision:prod.comisionFija||prod.comision||0,tipo:prod.tipo||'simple',componentes:prod.componentes||[]});
+  cantEl.value='';
+  pidEl.value='';
+  renderItemsFac();
+  actualizarPM();
+};
+window.quitarItemFac=function(i){itemsFac.splice(i,1);renderItemsFac();actualizarPM();};
+function renderItemsFac(){
+  const el=document.getElementById('lista-items'); if(!el)return;
+  if(!itemsFac.length){el.innerHTML='<div class="empty">Añade productos a la factura</div>';return;}
+  const t=getTasa();
+  const mon=document.querySelector('[name=fMoneda]')?.value||'CUP';
+  const subUSD=itemsFac.reduce((s,it)=>s+it.precio*it.cant,0);
+  const subCom=itemsFac.reduce((s,it)=>s+it.comision*it.cant,0);
+  let totalFinal=subUSD;
+  if(t.tipo==='cup')totalFinal=subUSD*t.rate;
+  else if(t.tipo==='transfer'||t.tipo==='zelle')totalFinal=subUSD*(1+t.rate/100);
+  let h=`<div style="background:var(--pan);border-radius:8px;overflow:hidden;margin-bottom:10px"><div class="ovx"><table style="font-size:12px"><thead><tr><th>Cód</th><th>Producto</th><th>Cant</th><th>USD/u</th><th>Comis.</th><th>Total</th>${mon==='CUP'?'<th>CUP</th>':''}<th></th></tr></thead><tbody>`;
+  itemsFac.forEach((it,i)=>{
+    h+=`<tr><td style="color:var(--ac)">${esc(it.codigo)}</td><td>${esc(it.nombre)}${it.tipo==='combo'?' <span style="color:var(--pur);font-size:10px">[COMBO]</span>':''}</td><td>${it.cant}</td><td>${usd(it.precio)}</td><td style="color:var(--cup)">${usd(it.comision)}</td><td style="font-weight:700">${usd(it.precio*it.cant)}</td>${mon==='CUP'?`<td style="color:var(--cup);font-weight:700">${Math.round(it.precio*it.cant*D.tasa.cup).toLocaleString()}</td>`:''}<td>${btn('✕','bd',`quitarItemFac(${i})`,true)}</td></tr>`;
+  });
+  h+=`</tbody></table></div><div style="padding:9px 12px;background:#0a0c10;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+    <div><div style="color:var(--mut);font-size:9px">Subtotal USD</div><div style="color:var(--ok);font-weight:800;font-size:13px">${usd(subUSD)}</div></div>
+    <div><div style="color:var(--mut);font-size:9px">Comisiones</div><div style="color:var(--cup);font-weight:800;font-size:13px">${usd(subCom)}</div></div>
+    <div><div style="color:var(--mut);font-size:9px">TOTAL A PAGAR</div><div style="color:var(--ac);font-weight:800;font-size:14px">${mon==='CUP'?Math.round(totalFinal).toLocaleString()+' CUP':usd(totalFinal)}</div></div>
+  </div></div>`;
+  el.innerHTML=h;
+}
+
+window.guardarFac=async function(){
+  if(!itemsFac.length){toast('Añade al menos un producto','#f97316');return;}
+  const gestorEl=document.getElementById('selGest');
+  if(!gestorEl?.value){toast('OBLIGATORIO: Selecciona el gestor','#ef4444');gestorEl?.focus();return;}
+  const t=getTasa();
+  const mon=document.querySelector('[name=fMoneda]')?.value||'CUP';
+  const subUSD=itemsFac.reduce((s,it)=>s+it.precio*it.cant,0);
+  const subCom=itemsFac.reduce((s,it)=>s+it.comision*it.cant,0);
+  let totalCUP=0,totalConR=subUSD;
+  if(t.tipo==='cup'){totalCUP=subUSD*t.rate;totalConR=subUSD;}
+  else if(t.tipo==='transfer'||t.tipo==='zelle'){totalConR=subUSD*(1+t.rate/100);totalCUP=totalConR*D.tasa.cup;}
+  // Pagos mixtos
+  const pagos=[];
+  document.querySelectorAll('.pm-row').forEach(row=>{
+    const id=row.id.replace('pm-','');
+    const forma=document.querySelector(`[name=pm${id}f]`)?.value||'';
+    const monto=+document.querySelector(`[name=pm${id}m]`)?.value||0;
+    if(forma&&monto>0)pagos.push({forma,monto,equivUSD:calcEquivUSD(forma,monto,'USD')});
+  });
+  const fac={
+    numero:sigNum(),fecha:gv('fFecha')||hoy(),
+    gestorId:gv('selGest'),mensajeroId:gv('selMens'),
+    clienteNombre:gv('fCliente'),clienteDir:gv('fDir'),
+    moneda:mon,formaPago:document.querySelector('[name=fPago]')?.value||'Efectivo',
+    tasa:t.rate,tipoTasa:t.tipo,
+    items:itemsFac.slice(),pagos,notas:gv('fNotas'),
+    totalUSD:subUSD,comisiones:subCom,totalCUP,totalConRecargo:totalConR,
+    estado:'Pendiente',timestamp:Date.now()
+  };
+  const gt=+gv('gastoTraslado');
+  try {
+    await push(ref(db,'facturas'),fac);
+    // Descontar inventario en Firebase
+    for(const it of itemsFac){
+      if(it.tipo==='combo'){
+        for(const comp of it.componentes||[]){
+          const p=Object.values(D.productos).find(x=>(x.id||x.codigo)==comp.pid);
+          if(p&&(p._key)){
+            const c=comp.cant*it.cant,td=p.tienda||0,al=p.almacen||0;
+            const rt=Math.min(td,c);
+            await update(ref(db,'productos/'+p._key),{tienda:td-rt,almacen:Math.max(0,al-(c-rt))});
+          }
+        }
+      } else {
+        const p=Object.values(D.productos).find(x=>(x.id||x.codigo)==it.pid);
+        if(p&&p._key){
+          let c=it.cant,td=p.tienda||0,al=p.almacen||0;
+          const rt=Math.min(td,c);td-=rt;c-=rt;al=Math.max(0,al-c);
+          await update(ref(db,'productos/'+p._key),{tienda:td,almacen:al});
+        }
+      }
+    }
+    // Gasto traslado
+    if(gt>0) await push(ref(db,'gastos'),{concepto:'Traslado/Mensajería (Fac:'+fac.numero+'): '+gv('gastoTrasladoCon'),monto:gt,categoria:'Traslado',fecha:hoy(),pagado:true,timestamp:Date.now()});
+    toast('✅ Factura '+fac.numero+' emitida y sincronizada');
+    cerrarModal('m-fac');
+    itemsFac=[];
+  } catch(e){toast('Error al guardar: '+e.message,'#ef4444');}
+};
+
+window.toggleFac=async function(key){
+  const f=D.facturas[key]; if(!f)return;
+  await update(ref(db,'facturas/'+key),{estado:f.estado==='Pagada'?'Pendiente':'Pagada'});
+  toast('Estado actualizado');
+};
+window.elimFac=async function(key){
+  if(!confirm('¿Eliminar factura?'))return;
+  await remove(ref(db,'facturas/'+key));
+  toast('Factura eliminada');
+};
+window.verFac=function(key){
+  const f=D.facturas[key]; if(!f)return;
+  const g=Object.values(D.gestores).find(x=>x.codigo==f.gestorId);
+  const m=Object.values(D.mensajeros).find(x=>(x.id||x.nombre)==f.mensajeroId);
+  const mon=f.moneda||'USD',rate=f.tasa||1,tt=f.tipoTasa||'cup';
+  let h=`<div class="mbg" id="m-ver"><div class="mbox wide"><div class="mhdr no-print"><h3>${esc(f.numero||'—')}</h3><button class="mc" onclick="cerrarModal('m-ver')">✕</button></div>`;
+  h+=`<div id="factura-print" style="background:#fff;color:#111;font-family:Georgia,serif;border-radius:8px;padding:28px;line-height:1.5">`;
+  h+=`<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #1a2030;padding-bottom:12px;margin-bottom:12px">
+    <div><div style="font-size:20px;font-weight:900;letter-spacing:2px">${esc(D.empresa.nombre)}</div>
+    <div style="font-size:11px;color:#555">${esc(D.empresa.ruc)}</div>
+    <div style="font-size:11px;color:#555">${esc(D.empresa.direccion)}</div>
+    <div style="font-size:11px;color:#555">${esc(D.empresa.tel)} · ${esc(D.empresa.email)}</div></div>
+    <div style="text-align:right">
+      <div style="font-size:9px;color:#888;letter-spacing:2px;font-weight:700">FACTURA</div>
+      <div style="font-size:22px;font-weight:900;color:#b8912e">${esc(f.numero||'—')}</div>
+      <div style="font-size:11px;color:#555">Fecha: ${f.fecha}</div>
+      <div style="font-size:11px;color:#555">Moneda: ${mon} · ${f.formaPago}</div>
+      ${tt==='cup'||tt==='transfer'?`<div style="font-size:10px;color:#888">Tasa: 1 USD = ${rate} CUP</div>`:tt==='zelle'?`<div style="font-size:10px;color:#888">Zelle (+${rate}%)</div>`:''}
+    </div></div>`;
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div style="background:#f5f7fa;border-radius:6px;padding:10px;font-size:12px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#888;margin-bottom:4px">VENDEDOR / GESTOR</div>
+    <div style="font-weight:700">${g?esc(g.nombre):'—'}</div><div style="color:#555">Código: ${esc(f.gestorId||'—')}</div><div style="color:#555">Tel: ${g?esc(g.tel||'—'):'—'}</div></div>
+    <div style="background:#f5f7fa;border-radius:6px;padding:10px;font-size:12px"><div style="font-size:9px;font-weight:700;letter-spacing:1px;color:#888;margin-bottom:4px">FACTURAR A</div>
+    <div style="font-weight:700">${esc(f.clienteNombre||'—')}</div><div style="color:#555">${esc(f.clienteDir||'—')}</div></div></div>`;
+  h+=`<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px"><thead><tr style="background:#1a2030;color:#fff">
+    <th style="padding:6px 8px;text-align:left">Código</th><th style="padding:6px 8px;text-align:left">Descripción</th><th style="padding:6px 8px;text-align:left">U/M</th><th style="padding:6px 8px;text-align:left">Cant.</th><th style="padding:6px 8px;text-align:left">Precio USD</th>
+    ${mon==='CUP'?'<th style="padding:6px 8px;text-align:left">Precio CUP</th><th style="padding:6px 8px;text-align:left">Total CUP</th>':'<th style="padding:6px 8px;text-align:left">Total USD</th>'}
+    </tr></thead><tbody>`;
+  (f.items||[]).forEach((it,j)=>{
+    h+=`<tr style="border-bottom:1px solid #ddd;background:${j%2?'#fafafa':'#fff'}">
+      <td style="padding:6px 8px;color:#b8912e;font-weight:700">${esc(it.codigo)}</td>
+      <td style="padding:6px 8px">${esc(it.nombre)}</td>
+      <td style="padding:6px 8px">${esc(it.unidad||'Unidad')}</td>
+      <td style="padding:6px 8px">${it.cant}</td>
+      <td style="padding:6px 8px">$${num(it.precio)}</td>
+      ${mon==='CUP'?`<td style="padding:6px 8px">${Math.round(it.precio*rate).toLocaleString()}</td><td style="padding:6px 8px;font-weight:700;color:#1a5c96">${Math.round(it.precio*it.cant*rate).toLocaleString()}</td>`:`<td style="padding:6px 8px;font-weight:700">$${num(it.precio*it.cant)}</td>`}
+    </tr>`;
+  });
+  h+=`</tbody></table>`;
+  h+=`<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><div style="width:230px;font-size:12px">
+    <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #ddd"><span>Subtotal USD</span><span>$${num(f.totalUSD)}</span></div>
+    ${(mon==='CUP'||tt==='transfer')?`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #ddd"><span>Tasa ×${rate}</span><span>${Math.round(f.totalCUP||0).toLocaleString()} CUP</span></div>`:''}
+    ${tt==='zelle'?`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #ddd"><span>Zelle +${rate}%</span><span>$${num(f.totalConRecargo||0)}</span></div>`:''}
+    <div style="display:flex;justify-content:space-between;padding:7px 0;font-weight:900;font-size:15px;border-top:3px double #1a2030;margin-top:3px">
+      <span>TOTAL A PAGAR</span>
+      <span style="color:#b8912e">${mon==='CUP'?Math.round(f.totalCUP||0).toLocaleString()+' CUP':tt==='zelle'?'$'+num(f.totalConRecargo||0):'$'+num(f.totalUSD)}</span>
+    </div></div></div>`;
+  if(f.pagos?.length){
+    h+=`<div style="background:#f0fff4;border:1px solid #bbf7d0;border-radius:5px;padding:10px 12px;margin-bottom:12px;font-size:11px"><b>Detalle de pago del cliente:</b><br>`;
+    f.pagos.forEach(p=>{h+=`• ${p.forma}: ${p.monto} (~$${num(p.equivUSD)} USD)<br>`;});
+    h+='</div>';
+  }
+  if(m)h+=`<div style="background:#f5f7fa;border-radius:6px;padding:8px 10px;margin-bottom:12px;font-size:11px"><b>Mensajero que entrega:</b> ${esc(m.nombre)} · Tel: ${esc(m.tel||'')}</div>`;
+  if(f.notas)h+=`<div style="font-size:11px;color:#666;margin-bottom:12px;font-style:italic">Notas: ${esc(f.notas)}</div>`;
+  h+=`<div style="margin-bottom:12px;padding:10px 12px;background:#f9f9f9;border:1px solid #ddd;border-radius:5px;font-size:9px;color:#555;line-height:1.7">
+    <b style="font-size:9px;text-transform:uppercase;letter-spacing:.5px">Condiciones de Entrega:</b><br>
+    • No se cubren daños por golpes, caídas, roturas, ralladuras ni otros desperfectos físicos que no se hayan reportado al momento exacto de la entrega.<br>
+    • Una vez el mensajero se retire, no se aceptan devoluciones ni reclamos por daños físicos.
+  </div>`;
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding-top:18px;border-top:1px solid #ddd">`;
+  ['Firma del Cliente','Firma del Vendedor','Firma del Mensajero'].forEach(l=>{h+=`<div style="text-align:center"><div style="height:38px;border-bottom:1px solid #aaa;margin-bottom:5px"></div><div style="font-size:10px;color:#666">${l}</div></div>`;});
+  h+=`</div><div style="text-align:center;margin-top:14px;font-size:9px;color:#bbb">${esc(D.empresa.nombre)} · ${esc(D.empresa.tel)} · ${esc(D.empresa.email)}</div>`;
+  h+=`</div><div class="no-print" style="display:flex;gap:8px;margin-top:14px">${btn('🖨 Imprimir / PDF','bp','window.print()')}${btn('Cerrar','bsec',"cerrarModal('m-ver')")}</div></div></div>`;
+  abrirModal(h);
+};
+
+// ════════════════════════════════════════════════════════════════
+// PEDIDOS (vales de gestores)
+// ════════════════════════════════════════════════════════════════
+function pPedidos(){
+  const peds=Object.entries(D.pedidos).map(([k,v])=>({...v,_key:k})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+  const ECOL={pendiente:'#f97316','en-camino':'#3b82f6',entregado:'#22c55e',cancelado:'#ef4444'};
+  const ELBL={pendiente:'Pendiente','en-camino':'En Camino 🛵',entregado:'Entregado ✅',cancelado:'Cancelado ❌'};
+  let h=`<div class="phdr"><div><h2>Pedidos de Gestores</h2><p>Vales enviados desde la app móvil — se actualizan en tiempo real</p></div></div>`;
+  h+=`<div class="stats">${[['pendiente','⏳'],['en-camino','🛵'],['entregado','✅']].map(([e,ic])=>sbox(ELBL[e],peds.filter(p=>p.estado===e).length,ECOL[e],ic)).join('')}</div>`;
+  h+=`<div class="search-bar"><input type="text" id="bped" placeholder="🔍 Buscar cliente, gestor..." oninput="filtrarPeds()"></div>`;
+  h+='<div id="peds-lista">';
+  if(!peds.length)h+='<div class="empty">No hay pedidos. Los gestores los envían desde su app móvil.</div>';
+  peds.forEach(p=>{
+    const ecol=ECOL[p.estado||'pendiente']||'#f97316';
+    const elbl=ELBL[p.estado||'pendiente']||'Pendiente';
+    const prods=p.productos||[];
+    h+=`<div class="card" style="border-left:4px solid ${ecol}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="color:var(--ac);font-weight:800;font-size:14px">${esc(p.numeroVale||'—')}</span>
+            ${tag(elbl,ecol)}
+          </div>
+          <div style="color:#dde3ef;font-size:14px;margin-top:3px">${esc(p.cliente?.nombre||'—')}</div>
+          <div style="color:var(--mut);font-size:11px">📱 ${esc(p.cliente?.telefono||'—')} · 📍 ${esc(p.cliente?.direccion||'—')}</div>
+          <div style="color:var(--mut);font-size:11px">Gestor: ${esc(p.gestor?.nombre||'—')} · ${p.fecha||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--ok);font-weight:800;font-size:16px">${usd(p.totalUSD)}</div>
+          <div style="color:var(--mut);font-size:11px">Entrega: ${p.entrega?.fecha||'—'}</div>
+        </div>
+      </div>
+      <div style="background:var(--pan);border-radius:7px;padding:9px 12px;font-size:12px;margin-bottom:10px">
+        ${prods.map((pr,i)=>`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bor)"><span>${i+1}. ${esc(pr.nombre)} ×${pr.cantidad||pr.cant}</span><span style="color:var(--ac)">${usd((pr.precio||0)*(pr.cantidad||pr.cant||1))}</span></div>`).join('')}
+      </div>
+      ${p.entrega?.notas?`<div style="font-size:12px;color:var(--mut);margin-bottom:10px">📝 ${esc(p.entrega.notas)}</div>`:''}
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        ${p.estado==='pendiente'?`${btn('🛵 En Camino','binf',`cambiarEstPed('${p._key}','en-camino')`,true)}`:''}
+        ${p.estado==='en-camino'?`${btn('✅ Entregado','bs',`cambiarEstPed('${p._key}','entregado')`,true)}`:''}
+        ${p.estado!=='entregado'&&p.estado!=='cancelado'?`${btn('❌ Cancelar','bd',`cambiarEstPed('${p._key}','cancelado')`,true)}`:''}
+        ${p.estado==='cancelado'||p.estado==='entregado'?`${btn('↩ Reabrir','bsec',`cambiarEstPed('${p._key}','pendiente')`,true)}`:''}
+        ${btn('➡ Convertir a Factura','bp',`pedidoAFactura('${p._key}')`,true)}
+      </div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+window.filtrarPeds=function(){
+  const q=(document.getElementById('bped')?.value||'').toLowerCase();
+  document.querySelectorAll('#peds-lista .card').forEach(c=>{c.style.display=!q||c.textContent.toLowerCase().includes(q)?'':'none';});
+};
+window.cambiarEstPed=async function(key,est){
+  await update(ref(db,'vales/'+key),{estado:est});
+  toast('Estado actualizado');
+};
+window.pedidoAFactura=async function(key){
+  const p=D.pedidos[key]; if(!p)return;
+  if(!confirm('¿Convertir este pedido en factura? Se registrará como factura emitida.'))return;
+  const num=sigNum();
+  const fac={
+    numero:num,fecha:hoy(),
+    gestorId:p.gestor?.codigo||'',mensajeroId:'',
+    clienteNombre:p.cliente?.nombre||'',clienteDir:p.cliente?.direccion||'',
+    moneda:'CUP',formaPago:'Efectivo',tasa:D.tasa.cup,tipoTasa:'cup',
+    items:(p.productos||[]).map(pr=>({codigo:pr.nombre,nombre:pr.nombre,unidad:'Unidad',cant:pr.cantidad||pr.cant||1,precio:pr.precio||0,comision:0})),
+    totalUSD:p.totalUSD||0,comisiones:0,totalCUP:(p.totalUSD||0)*D.tasa.cup,
+    estado:'Pendiente',timestamp:Date.now(),origenPedido:key
+  };
+  await push(ref(db,'facturas'),fac);
+  await update(ref(db,'vales/'+key),{estado:'en-camino',convertidoAFac:num});
+  toast('✅ Factura '+num+' creada desde pedido');
+  irA('facturas');
+};
+
+// ════════════════════════════════════════════════════════════════
+// GESTORES
+// ════════════════════════════════════════════════════════════════
+function pGestores(){
+  const gs=Object.entries(D.gestores).map(([k,v])=>({...v,_key:k}));
+  const comGs=gs.map(g=>{
+    const fs=Object.values(D.facturas).filter(f=>f.gestorId===g.codigo);
+    return{...g,tv:fs.reduce((s,f)=>s+(f.totalUSD||0),0),tc:fs.reduce((s,f)=>s+(f.comisiones||0),0),nf:fs.length};
+  });
+  let h=`<div class="phdr"><div><h2>Gestores y Comisiones</h2><p>Comisiones calculadas automáticamente de las facturas</p></div>${btn('+ Nuevo Gestor','bp','abrirGestor(null)')}</div>`;
+  h+=`<div class="stats">${sbox('Comisiones a Pagar',usd(comGs.reduce((s,g)=>s+g.tc,0)),'#f97316','💸')}${sbox('Total Vendido',usd(comGs.reduce((s,g)=>s+g.tv,0)),'#22c55e','📈')}${sbox('Gestores Activos',gs.length,'#3b82f6','👥')}</div>`;
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px">';
+  comGs.forEach(g=>{
+    const tcol=g.pago==='Semanal'?'#3b82f6':g.pago==='Mensual'?'#a855f7':'#f97316';
+    h+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div><div style="color:var(--ac);font-weight:800;font-size:14px">${esc(g.nombre)}</div><div style="color:var(--mut);font-size:11px">${esc(g.codigo)}</div></div>
+      ${tag(g.pago||'—',tcol)}</div>
+      <div style="background:var(--pan);border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="color:var(--mut);font-size:9px;font-weight:700;letter-spacing:.6px;margin-bottom:7px">RESUMEN DE VENTAS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+          <div style="background:#0a0c10;border-radius:5px;padding:6px"><div style="color:var(--mut);font-size:9px">Facturas</div><div style="color:#dde3ef;font-weight:800;font-size:13px">${g.nf}</div></div>
+          <div style="background:#0a0c10;border-radius:5px;padding:6px"><div style="color:var(--mut);font-size:9px">Vendido</div><div style="color:var(--ok);font-weight:800;font-size:12px">${usd(g.tv)}</div></div>
+          <div style="background:#0a0c10;border-radius:5px;padding:6px"><div style="color:var(--mut);font-size:9px">Comisión</div><div style="color:var(--cup);font-weight:800;font-size:15px">${usd(g.tc)}</div></div>
+        </div>
+      </div>
+      <div style="display:grid;gap:4px;font-size:12px;margin-bottom:10px">
+        ${[['📱',g.tel||g.telefono],['🏠',g.dir||g.direccion],['🪪',g.carnet],['💳',g.tarjeta]].map(([ic,v])=>`<div style="display:flex;gap:6px"><span>${ic}</span><span style="color:${v?'#dde3ef':'var(--mut)'}">${esc(v||'—')}</span></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:7px">${btn('✏ Editar','bsec',`abrirGestor('${g._key}')`,true)} ${btn('✕','bd',`elimGestor('${g._key}')`,true)}</div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+window.abrirGestor=function(key){
+  const g=key?D.gestores[key]:null;
+  let h=`<div class="mbg" id="m-gest"><div class="mbox"><div class="mhdr"><h3>${g?'Editar Gestor':'Nuevo Gestor'}</h3><button class="mc" onclick="cerrarModal('m-gest')">✕</button></div>`;
+  h+=`<form onsubmit="guardarGestor(event,'${key||''}')">`;
+  h+=`<div class="g2">${campo('Código',inp('gCod',g?.codigo||'','text','G-001'))}${campo('Nombre Completo',inp('gNom',g?.nombre||''))}</div>`;
+  h+=`<div class="g2">${campo('Teléfono',inp('gTel',g?.tel||g?.telefono||''))}${campo('# Carnet',inp('gCarnet',g?.carnet||''))}</div>`;
+  h+=campo('Dirección',inp('gDir',g?.dir||g?.direccion||''));
+  h+=campo('Tarjeta para pagos',inp('gTarjeta',g?.tarjeta||'','text','9208-xxxx-xxxx-0000'));
+  h+=campo('Frecuencia de pago',sel('gPago',g?.pago||'Semanal',['Semanal','Mensual','Por venta']));
+  h+=`<button type="submit" class="btn bp full">Guardar Gestor</button></form></div></div>`;
+  abrirModal(h);
+};
+window.guardarGestor=async function(e,key){
+  e.preventDefault();
+  const item={codigo:gv('gCod'),nombre:gv('gNom'),tel:gv('gTel'),carnet:gv('gCarnet'),dir:gv('gDir'),tarjeta:gv('gTarjeta'),pago:gv('gPago'),activo:true};
+  if(key)await update(ref(db,'gestores/'+key),item);
+  else await push(ref(db,'gestores'),item);
+  toast('✅ Gestor guardado y sincronizado');
+  cerrarModal('m-gest');
+};
+window.elimGestor=async function(key){
+  if(!confirm('¿Eliminar gestor?'))return;
+  await remove(ref(db,'gestores/'+key));
+  toast('Gestor eliminado');
+};
+
+// ════════════════════════════════════════════════════════════════
+// MENSAJEROS
+// ════════════════════════════════════════════════════════════════
+function pMensajeros(){
+  const ms=Object.entries(D.mensajeros).map(([k,v])=>({...v,_key:k}));
+  let h=`<div class="phdr"><div><h2>Mensajeros</h2><p>Registro de mensajeros y fondos asignados</p></div>${btn('+ Añadir','bp','abrirMensajero(null)')}</div>`;
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">';
+  if(!ms.length)h+='<div class="empty" style="grid-column:1/-1">Sin mensajeros. Añade el primero.</div>';
+  ms.forEach(m=>{
+    h+=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div><div style="color:#dde3ef;font-weight:700;font-size:14px">${esc(m.nombre)}</div><div style="color:var(--mut);font-size:11px">📱 ${esc(m.tel||'—')}</div></div>
+      <div style="text-align:right"><div style="color:var(--ok);font-weight:800;font-size:16px">${usd(m.fondo||0)}</div><div style="color:var(--mut);font-size:10px">Fondo USD</div></div></div>
+      ${m.obs?`<div style="background:var(--pan);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--mut);margin-bottom:10px">📝 ${esc(m.obs)}</div>`:''}
+      <div style="display:flex;gap:7px">${btn('✏ Editar','bsec',`abrirMensajero('${m._key}')`,true)} ${btn('✕','bd',`elimMensajero('${m._key}')`,true)}</div>
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+
+window.abrirMensajero=function(key){
+  const m=key?D.mensajeros[key]:null;
+  let h=`<div class="mbg" id="m-mens"><div class="mbox"><div class="mhdr"><h3>${m?'Editar Mensajero':'Nuevo Mensajero'}</h3><button class="mc" onclick="cerrarModal('m-mens')">✕</button></div>`;
+  h+=`<form onsubmit="guardarMensajero(event,'${key||''}')">`;
+  h+=campo('Nombre',inp('mNom',m?.nombre||''));
+  h+=campo('Teléfono',inp('mTel',m?.tel||''));
+  h+=campo('Fondo en USD (para dar cambio)',inp('mFondo',m?.fondo||0,'number','0.00'));
+  h+=campo('Observaciones','<textarea name="mObs" style="width:100%;background:#0a0c10;border:1px solid var(--bor);border-radius:6px;padding:8px 10px;color:#dde3ef;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit;box-sizing:border-box" placeholder="Ruta, horario...">'+(m?.obs||'')+'</textarea>');
+  h+=`<button type="submit" class="btn bp full">Guardar</button></form></div></div>`;
+  abrirModal(h);
+};
+window.guardarMensajero=async function(e,key){
+  e.preventDefault();
+  const nuevoFondo=+gv('mFondo');
+  const fondoAnt=key?(D.mensajeros[key]?.fondo||0):0;
+  const item={nombre:gv('mNom'),tel:gv('mTel'),fondo:nuevoFondo,obs:document.querySelector('[name=mObs]')?.value||''};
+  if(key)await update(ref(db,'mensajeros/'+key),item);
+  else await push(ref(db,'mensajeros'),item);
+  const diff=nuevoFondo-fondoAnt;
+  if(diff!==0)await push(ref(db,'gastos'),{concepto:(diff>0?'Fondo asignado a':'Recuperación fondo de')+' mensajero: '+item.nombre,monto:Math.abs(diff),categoria:'Fondo Mensajero',fecha:hoy(),pagado:true,timestamp:Date.now()});
+  toast('✅ Mensajero guardado y sincronizado');
+  cerrarModal('m-mens');
+};
+window.elimMensajero=async function(key){
+  if(!confirm('¿Eliminar mensajero?'))return;
+  await remove(ref(db,'mensajeros/'+key));
+  toast('Mensajero eliminado');
+};
+
+// ════════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════════
+function pConfig(){
+  const e=D.empresa; const t=D.tasa;
+  let h=`<h2 style="color:var(--ac);margin-bottom:20px">Configuración — Facturación</h2>`;
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">`;
+  h+=`<div class="card"><div class="ctitle">🏢 Datos de la Empresa</div><form onsubmit="guardarEmpresa(event)">
+    ${campo('Nombre',inp('eNom',e.nombre))}${campo('RUC / NIT',inp('eRuc',e.ruc))}
+    ${campo('Dirección',inp('eDir',e.direccion))}${campo('Teléfono',inp('eTel',e.tel))}
+    ${campo('Email',inp('eEmail',e.email))}
+    <button type="submit" class="btn bp full">💾 Guardar</button></form></div>`;
+  h+=`<div><div class="card" style="margin-bottom:14px"><div class="ctitle">💱 Tasas de Cambio</div><form onsubmit="guardarTasa(event)">
+    <div style="background:var(--pan);border-radius:8px;padding:11px;margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--mut);font-size:12px">💵 Efectivo CUP</span><span style="color:#f97316;font-weight:900;font-size:19px">${t.cup}</span></div>${campo('',inp('tCup',t.cup,'number','','','.01'),0)}</div>
+    <div style="background:var(--pan);border-radius:8px;padding:11px;margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--mut);font-size:12px">🏦 Transferencia (%)</span><span style="color:#3b82f6;font-weight:900;font-size:19px">+${t.transferPorc}%</span></div>${campo('',inp('tTrans',t.transferPorc,'number','','','.01'),0)}</div>
+    <div style="background:var(--pan);border-radius:8px;padding:11px;margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--mut);font-size:12px">📲 Zelle (%)</span><span style="color:#14b8a6;font-weight:900;font-size:19px">+${t.zellePorc}%</span></div>${campo('',inp('tZelle',t.zellePorc,'number','','','.01'),0)}</div>
+    <button type="submit" class="btn bp full">💾 Guardar Tasas</button></form></div>
+    <div class="warn-box">💡 Los cambios en tasas y empresa se sincronizan automáticamente con el módulo de Finanzas e Inventario.</div></div>`;
+  h+='</div>';
+  return h;
+}
+
+window.guardarEmpresa=async function(e){
+  e.preventDefault();
+  const emp={nombre:gv('eNom'),ruc:gv('eRuc'),direccion:gv('eDir'),tel:gv('eTel'),email:gv('eEmail')};
+  await set(ref(db,'config/empresa'),emp);
+  toast('✅ Datos guardados y sincronizados');
+};
+window.guardarTasa=async function(e){
+  e.preventDefault();
+  await set(ref(db,'config/tasa'),{cup:+gv('tCup'),transferPorc:+gv('tTrans'),zellePorc:+gv('tZelle')});
+  toast('✅ Tasas guardadas y sincronizadas');
+};
+
+// ── INIT ──────────────────────────────────────────────────────────
+mostrar();
+</script>
+</body>
+</html>

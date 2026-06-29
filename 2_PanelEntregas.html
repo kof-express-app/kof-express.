@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOF-EXPRESS — Panel de Entregas</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--accent:#f5c842;--bg:#0a0c10;--panel:#111520;--card:#171e2b;--border:#1f2a3d;--muted:#4e5a70;--success:#22c55e;--danger:#ef4444;--info:#3b82f6;--cup:#f97316;--purple:#a855f7}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#dde3ef;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#0d1017,#171e2b);border-bottom:2px solid var(--accent);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+.hdr .logo{color:var(--accent);font-weight:900;font-size:16px;letter-spacing:1px}
+.hdr .sub{color:var(--muted);font-size:11px;margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.status-dot{font-size:10px;padding:4px 10px;border-radius:20px;font-weight:700}
+.online{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.offline{background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px}
+/* STATS */
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px 18px;flex:1;min-width:120px}
+.sbox .sl{color:var(--muted);font-size:10px;margin-bottom:3px}
+.sbox .sv{font-size:22px;font-weight:800;line-height:1.1}
+/* FILTROS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+.filters input{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#dde3ef;font-size:13px;outline:none;flex:1;min-width:160px}
+.filters select{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#dde3ef;font-size:13px;outline:none}
+.fbtn{padding:8px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+/* VALES */
+.vale-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color .2s}
+.vale-card:hover{border-color:#f5c84244}
+.vale-card.estado-pendiente{border-left:4px solid var(--cup)}
+.vale-card.estado-en-camino{border-left:4px solid var(--info)}
+.vale-card.estado-entregado{border-left:4px solid var(--success);opacity:.7}
+.vale-card.estado-cancelado{border-left:4px solid var(--danger);opacity:.6}
+.vale-hdr{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.vale-num{color:var(--accent);font-weight:900;font-size:15px}
+.vale-fecha{color:var(--muted);font-size:11px}
+.vale-gestor{color:var(--muted);font-size:11px}
+.tag{border-radius:4px;padding:2px 9px;font-size:10px;font-weight:700;white-space:nowrap}
+.vale-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:12px}
+@media(max-width:700px){.vale-body{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.vale-body{grid-template-columns:1fr}}
+.vale-section label{color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;display:block;margin-bottom:4px}
+.vale-section .val{color:#dde3ef;font-size:13px}
+.vale-section .val b{color:#dde3ef;font-weight:700}
+.vale-prods{background:var(--panel);border-radius:8px;padding:10px 12px;font-size:12px}
+.prod-row-v{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)}
+.prod-row-v:last-child{border-bottom:none}
+.vale-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.vbtn{padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;z-index:999;padding:16px}
+.mbg.open{display:flex}
+.mbox{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.mhdr h3{color:var(--accent);font-size:15px;font-weight:800}
+.mclose{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.field{margin-bottom:12px}
+.field label{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:#0a0c10;border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:#dde3ef;font-size:13px;outline:none;box-sizing:border-box;font-family:inherit}
+.field textarea{min-height:70px;resize:vertical}
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#22c55e;color:#0a0c10;padding:11px 18px;border-radius:9px;font-weight:700;font-size:13px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999}
+.toast.show{transform:translateY(0);opacity:1}
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+.empty .ic{font-size:48px;margin-bottom:12px}
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.spin{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="logo">🏪 KOF-EXPRESS</div>
+    <div class="sub">Panel de Entregas — Tiempo Real</div>
+  </div>
+  <div class="hdr-right">
+    <div class="status-dot online" id="conn-dot">● En línea</div>
+    <button onclick="abrirConfig()" style="background:var(--border);border:none;border-radius:7px;padding:7px 12px;color:#dde3ef;font-size:12px;font-weight:700;cursor:pointer">⚙️ Config</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- STATS -->
+  <div class="stats" id="stats-row">
+    <div class="sbox"><div class="sl">Pendientes</div><div class="sv" style="color:var(--cup)" id="s-pend">—</div></div>
+    <div class="sbox"><div class="sl">En Camino</div><div class="sv" style="color:var(--info)" id="s-cam">—</div></div>
+    <div class="sbox"><div class="sl">Entregados hoy</div><div class="sv" style="color:var(--success)" id="s-ent">—</div></div>
+    <div class="sbox"><div class="sl">Total vales</div><div class="sv" style="color:var(--accent)" id="s-tot">—</div></div>
+    <div class="sbox"><div class="sl">Facturado USD</div><div class="sv" style="color:var(--success)" id="s-usd">—</div></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filters">
+    <input type="text" id="buscar" placeholder="🔍 Buscar cliente, gestor, número de vale..." oninput="renderVales()">
+    <select id="fil-estado" onchange="renderVales()">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendientes</option>
+      <option value="en-camino">En camino</option>
+      <option value="entregado">Entregados</option>
+      <option value="cancelado">Cancelados</option>
+    </select>
+    <select id="fil-gestor" onchange="renderVales()">
+      <option value="">Todos los gestores</option>
+    </select>
+    <button class="fbtn" style="background:var(--accent);color:#0a0c10" onclick="renderVales()">Filtrar</button>
+    <button class="fbtn" style="background:var(--border);color:#dde3ef" onclick="limpiarFiltros()">✕ Limpiar</button>
+  </div>
+
+  <!-- LISTA DE VALES -->
+  <div id="vales-lista">
+    <div class="loading"><div class="spin"></div><br>Conectando con Firebase...</div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div class="mbg" id="modal-detalle">
+  <div class="mbox" id="modal-detalle-content"></div>
+</div>
+
+<!-- MODAL CONFIG -->
+<div class="mbg" id="modal-config">
+  <div class="mbox">
+    <div class="mhdr"><h3>⚙️ Configuración</h3><button class="mclose" onclick="document.getElementById('modal-config').classList.remove('open')">✕</button></div>
+    <div class="field"><label>N° WhatsApp de Entregas (para recibir vales)</label><input type="tel" id="cfg-wa" placeholder="5312345678"></div>
+    <div class="field"><label>Gestores (separados por coma)</label><textarea id="cfg-gestores-txt" placeholder="G-001:Ana García,G-002:Luis Torres"></textarea><div style="color:var(--muted);font-size:11px;margin-top:4px">Formato: CODIGO:Nombre, uno por línea</div></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button onclick="guardarConfig()" style="flex:1;padding:11px;background:var(--accent);color:#0a0c10;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer">💾 Guardar</button>
+      <button onclick="document.getElementById('modal-config').classList.remove('open')" style="flex:1;padding:11px;background:var(--border);color:#dde3ef;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, update, get, set }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FB={apiKey:"AIzaSyAm0re-tCh5EPaynCHh3AzgiMw_1swREJM",authDomain:"kof-express.firebaseapp.com",databaseURL:"https://kof-express-default-rtdb.firebaseio.com",projectId:"kof-express",storageBucket:"kof-express.firebasestorage.app",messagingSenderId:"846750149946",appId:"1:846750149946:web:c330681d5fee8621c43403"};
+const app=initializeApp(FB);
+const db=getDatabase(app);
+
+let todosVales={};
+let waNum='';
+
+const ESTADOS={
+  pendiente:{lbl:'Pendiente',col:'#f97316'},
+  'en-camino':{lbl:'En Camino 🛵',col:'#3b82f6'},
+  entregado:{lbl:'Entregado ✅',col:'#22c55e'},
+  cancelado:{lbl:'Cancelado ❌',col:'#ef4444'}
+};
+
+function toast(msg,col='#22c55e'){const t=document.getElementById('toast');t.textContent=msg;t.style.background=col;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+function usd(n){return '$'+Number(n||0).toFixed(2);}
+function hoy(){return new Date().toISOString().split('T')[0];}
+
+// ── CARGAR CONFIG ─────────────────────────────────
+async function cargarConfig(){
+  try {
+    const snap=await get(ref(db,'config'));
+    if(snap.exists()){
+      const cfg=snap.val();
+      if(cfg.waEntregas) waNum=cfg.waEntregas;
+    }
+  } catch(e){}
+}
+
+// ── ESCUCHAR VALES EN TIEMPO REAL ──────────────────
+onValue(ref(db,'vales'), snap=>{
+  if(snap.exists()){
+    todosVales=snap.val();
+  } else {
+    todosVales={};
+  }
+  actualizarStats();
+  renderVales();
+  poblarGestores();
+}, err=>{
+  document.getElementById('vales-lista').innerHTML='<div class="empty"><div class="ic">⚠️</div>Error al conectar con Firebase.<br><small>'+err.message+'</small></div>';
+});
+
+// Conexión
+onValue(ref(db,'.info/connected'),snap=>{
+  const dot=document.getElementById('conn-dot');
+  dot.textContent=snap.val()?'● En línea':'○ Sin conexión';
+  dot.className='status-dot '+(snap.val()?'online':'offline');
+});
+
+// ── STATS ─────────────────────────────────────────
+function actualizarStats(){
+  const vals=Object.values(todosVales);
+  document.getElementById('s-pend').textContent=vals.filter(v=>v.estado==='pendiente').length;
+  document.getElementById('s-cam').textContent=vals.filter(v=>v.estado==='en-camino').length;
+  document.getElementById('s-ent').textContent=vals.filter(v=>v.estado==='entregado'&&v.fecha===hoy()).length;
+  document.getElementById('s-tot').textContent=vals.length;
+  document.getElementById('s-usd').textContent=usd(vals.reduce((s,v)=>s+(v.totalUSD||0),0));
+}
+
+// ── GESTORES FILTER ──────────────────────────────
+function poblarGestores(){
+  const sel=document.getElementById('fil-gestor');
+  const cur=sel.value;
+  const gestores=[...new Set(Object.values(todosVales).map(v=>v.gestor?.nombre||'').filter(Boolean))];
+  sel.innerHTML='<option value="">Todos los gestores</option>';
+  gestores.forEach(g=>sel.innerHTML+='<option value="'+g+'"'+(g===cur?' selected':'')+'>'+g+'</option>');
+}
+
+// ── RENDER VALES ──────────────────────────────────
+window.renderVales = function(){
+  const q=(document.getElementById('buscar').value||'').toLowerCase();
+  const filtEst=document.getElementById('fil-estado').value;
+  const filtGes=document.getElementById('fil-gestor').value;
+  const cont=document.getElementById('vales-lista');
+
+  let vals=Object.entries(todosVales)
+    .map(([k,v])=>({...v,_key:k}))
+    .sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+
+  if(filtEst) vals=vals.filter(v=>v.estado===filtEst);
+  if(filtGes) vals=vals.filter(v=>v.gestor?.nombre===filtGes);
+  if(q) vals=vals.filter(v=>{
+    return JSON.stringify(v).toLowerCase().includes(q);
+  });
+
+  if(!vals.length){
+    cont.innerHTML='<div class="empty"><div class="ic">📭</div>Sin vales'+(q?' que coincidan con "'+q+'"':'')+'</div>';
+    return;
+  }
+
+  cont.innerHTML=vals.map(v=>{
+    const est=ESTADOS[v.estado]||ESTADOS.pendiente;
+    const prods=v.productos||[];
+    const pagos=v.pagos||[];
+    return `
+    <div class="vale-card estado-${v.estado||'pendiente'}">
+      <div class="vale-hdr">
+        <div>
+          <div class="vale-num">${v.numeroVale||'—'} <span class="tag" style="background:${est.col}22;color:${est.col}">${est.lbl}</span></div>
+          <div class="vale-gestor">Gestor: ${v.gestor?.nombre||'—'} (${v.gestor?.codigo||'—'}) · ${v.fecha||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="color:#22c55e;font-weight:800;font-size:16px">${usd(v.totalUSD)}</div>
+          <div style="color:var(--muted);font-size:11px">${v.entrega?.fecha||'—'}</div>
+        </div>
+      </div>
+      <div class="vale-body">
+        <div class="vale-section">
+          <label>👤 Cliente</label>
+          <div class="val"><b>${v.cliente?.nombre||'—'}</b></div>
+          <div class="val" style="font-size:12px">📱 ${v.cliente?.telefono||'—'}</div>
+          <div class="val" style="font-size:12px">📍 ${v.cliente?.direccion||'—'}</div>
+        </div>
+        <div class="vale-section">
+          <label>📦 Productos</label>
+          <div class="vale-prods">
+            ${prods.map(p=>`<div class="prod-row-v"><span>${p.nombre} ×${p.cantidad}</span><span style="color:var(--accent)">${usd(p.precio*p.cantidad)}</span></div>`).join('')}
+          </div>
+        </div>
+        <div class="vale-section">
+          <label>💳 Pago</label>
+          ${pagos.length?pagos.map(p=>`<div class="val" style="font-size:12px">${p.forma}: ${p.monto} ${p.moneda}</div>`).join(''):'<div class="val" style="font-size:12px">No especificado</div>'}
+          <div style="margin-top:6px;color:var(--muted);font-size:11px">📅 Entrega: ${v.entrega?.fecha||'—'}</div>
+          ${v.entrega?.horario?`<div style="color:var(--muted);font-size:11px">⏰ ${v.entrega.horario}</div>`:''}
+          ${v.entrega?.notas?`<div style="color:var(--muted);font-size:11px;margin-top:4px">📝 ${v.entrega.notas}</div>`:''}
+        </div>
+      </div>
+      <div class="vale-actions">
+        ${v.estado==='pendiente'?`<button class="vbtn" style="background:#3b82f622;color:#3b82f6;border:1px solid #3b82f633" onclick="cambiarEstado('${v._key}','en-camino')">🛵 En Camino</button>`:''}
+        ${v.estado==='en-camino'?`<button class="vbtn" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e33" onclick="cambiarEstado('${v._key}','entregado')">✅ Entregado</button>`:''}
+        ${v.estado!=='entregado'&&v.estado!=='cancelado'?`<button class="vbtn" style="background:#ef444422;color:#ef4444;border:1px solid #ef444433" onclick="cambiarEstado('${v._key}','cancelado')">❌ Cancelar</button>`:''}
+        ${v.estado==='cancelado'||v.estado==='entregado'?`<button class="vbtn" style="background:var(--border);color:var(--muted)" onclick="cambiarEstado('${v._key}','pendiente')">↩ Reabrir</button>`:''}
+        <button class="vbtn" style="background:#25D36622;color:#25D366;border:1px solid #25D36633" onclick="enviarWA('${v._key}')">📲 WhatsApp</button>
+        <button class="vbtn" style="background:var(--border);color:var(--muted)" onclick="verDetalle('${v._key}')">👁 Detalle</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.limpiarFiltros=function(){
+  document.getElementById('buscar').value='';
+  document.getElementById('fil-estado').value='';
+  document.getElementById('fil-gestor').value='';
+  renderVales();
+};
+
+// ── CAMBIAR ESTADO ────────────────────────────────
+window.cambiarEstado=async function(key,nuevoEstado){
+  try {
+    await update(ref(db,'vales/'+key),{estado:nuevoEstado,ultimaActualizacion:Date.now()});
+    toast('Estado actualizado: '+ESTADOS[nuevoEstado].lbl);
+  } catch(e){ toast('Error al actualizar','#ef4444'); }
+};
+
+// ── WHATSAPP ──────────────────────────────────────
+window.enviarWA=async function(key){
+  const v={...todosVales[key],_key:key};
+  if(!v){return;}
+  const prods=v.productos||[];
+  const pagos=v.pagos||[];
+  let msg='🧾 *VALE — KOF-EXPRESS*\n━━━━━━━━━━━━━━━━━━━━━━\n';
+  msg+='📋 *'+v.numeroVale+'* | 📅 '+v.fecha+'\n';
+  msg+='👤 *Gestor:* '+v.gestor?.nombre+' ('+v.gestor?.codigo+')\n\n';
+  msg+='━━ CLIENTE ━━\n';
+  msg+='*'+v.cliente?.nombre+'*\n📱 '+v.cliente?.telefono+'\n📍 '+v.cliente?.direccion+'\n\n';
+  msg+='━━ PRODUCTOS ━━\n';
+  prods.forEach((p,i)=>{msg+=(i+1)+'. *'+p.nombre+'* ×'+p.cantidad+' = $'+(p.precio*p.cantidad).toFixed(2)+(p.descripcion?' ('+p.descripcion+')':'')+'\n';});
+  msg+='\n*💰 TOTAL: $'+Number(v.totalUSD||0).toFixed(2)+' USD*\n\n';
+  if(pagos.length){msg+='━━ PAGO ━━\n';pagos.forEach(p=>{msg+='• '+p.forma+': '+p.monto+' '+p.moneda+'\n';});}
+  msg+='\n━━ ENTREGA ━━\n📅 '+v.entrega?.fecha;
+  if(v.entrega?.horario) msg+=' · ⏰ '+v.entrega.horario;
+  if(v.entrega?.notas) msg+='\n📝 '+v.entrega.notas;
+  msg+='\n━━━━━━━━━━━━━━━━━━━━━━\n⚠️ _No se cubren daños no reportados al momento de la entrega._';
+  const num=waNum||prompt('Número WhatsApp de destino (ej: 5312345678):');
+  if(num) window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+};
+
+// ── DETALLE ───────────────────────────────────────
+window.verDetalle=function(key){
+  const v=todosVales[key]; if(!v) return;
+  const prods=v.productos||[];
+  const pagos=v.pagos||[];
+  const est=ESTADOS[v.estado]||ESTADOS.pendiente;
+  document.getElementById('modal-detalle-content').innerHTML=`
+    <div class="mhdr">
+      <h3>${v.numeroVale||'—'}</h3>
+      <button class="mclose" onclick="document.getElementById('modal-detalle').classList.remove('open')">✕</button>
+    </div>
+    <div style="margin-bottom:14px"><span class="tag" style="background:${est.col}22;color:${est.col};font-size:12px;padding:4px 12px">${est.lbl}</span></div>
+    <div class="field"><label>Gestor</label><div style="color:#dde3ef">${v.gestor?.nombre} — ${v.gestor?.codigo}</div></div>
+    <div class="field"><label>Cliente</label><div style="color:#dde3ef;font-weight:700">${v.cliente?.nombre}</div><div style="color:var(--muted);font-size:12px">📱 ${v.cliente?.telefono||'—'}</div><div style="color:var(--muted);font-size:12px">📍 ${v.cliente?.direccion||'—'}</div></div>
+    <div class="field"><label>Productos</label>${prods.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${p.nombre} ×${p.cantidad}${p.descripcion?' ('+p.descripcion+')':''}</span><span style="color:var(--accent)">$${(p.precio*p.cantidad).toFixed(2)}</span></div>`).join('')}<div style="text-align:right;font-weight:800;color:#22c55e;padding-top:7px">TOTAL: $${Number(v.totalUSD||0).toFixed(2)} USD</div></div>
+    <div class="field"><label>Forma de Pago</label>${pagos.length?pagos.map(p=>`<div style="font-size:13px;padding:3px 0">${p.forma}: ${p.monto} ${p.moneda}</div>`).join(''):'<div style="color:var(--muted)">No especificado</div>'}</div>
+    <div class="field"><label>Entrega</label><div style="font-size:13px">📅 ${v.entrega?.fecha||'—'}${v.entrega?.horario?' · ⏰ '+v.entrega.horario:''}</div>${v.entrega?.notas?`<div style="font-size:12px;color:var(--muted);margin-top:5px">📝 ${v.entrega.notas}</div>`:''}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      ${v.estado==='pendiente'?`<button onclick="cambiarEstado('${key}','en-camino');document.getElementById('modal-detalle').classList.remove('open')" style="flex:1;padding:10px;background:#3b82f622;border:1px solid #3b82f633;color:#3b82f6;border-radius:8px;font-weight:700;cursor:pointer">🛵 En Camino</button>`:''}
+      ${v.estado==='en-camino'?`<button onclick="cambiarEstado('${key}','entregado');document.getElementById('modal-detalle').classList.remove('open')" style="flex:1;padding:10px;background:#22c55e22;border:1px solid #22c55e33;color:#22c55e;border-radius:8px;font-weight:700;cursor:pointer">✅ Entregado</button>`:''}
+      <button onclick="enviarWA('${key}')" style="flex:1;padding:10px;background:#25D36622;border:1px solid #25D36633;color:#25D366;border-radius:8px;font-weight:700;cursor:pointer">📲 WhatsApp</button>
+    </div>`;
+  document.getElementById('modal-detalle').classList.add('open');
+};
+
+document.getElementById('modal-detalle').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+// ── CONFIG ────────────────────────────────────────
+window.abrirConfig=async function(){
+  document.getElementById('cfg-wa').value=waNum;
+  try {
+    const snap=await get(ref(db,'gestores'));
+    if(snap.exists()){
+      const gs=snap.val();
+      document.getElementById('cfg-gestores-txt').value=Object.values(gs).map(g=>g.codigo+':'+g.nombre).join('\n');
+    }
+  } catch(e){}
+  document.getElementById('modal-config').classList.add('open');
+};
+
+window.guardarConfig=async function(){
+  const wa=document.getElementById('cfg-wa').value.trim().replace(/\D/g,'');
+  const gestoresTxt=document.getElementById('cfg-gestores-txt').value.trim();
+  try {
+    await set(ref(db,'config'),{waEntregas:wa,actualizado:Date.now()});
+    waNum=wa;
+    // Guardar gestores en Firebase
+    if(gestoresTxt){
+      const gestores={};
+      gestoresTxt.split('\n').forEach(line=>{
+        const [cod,...rest]=line.split(':');
+        const nombre=rest.join(':').trim();
+        const codigo=cod.trim();
+        if(codigo&&nombre){
+          const key=codigo.replace(/[^a-zA-Z0-9]/g,'_');
+          gestores[key]={codigo,nombre,activo:true};
+        }
+      });
+      await set(ref(db,'gestores'),gestores);
+      toast('✅ Configuración y gestores guardados');
+    } else {
+      toast('✅ Configuración guardada');
+    }
+    document.getElementById('modal-config').classList.remove('open');
+  } catch(e){ toast('❌ Error al guardar: '+e.message,'#ef4444'); }
+};
+
+cargarConfig();
+</script>
+</body>
+</html>
